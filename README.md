@@ -54,22 +54,23 @@ A modern, high-performance Android mobile application for **[Intervals.icu](http
 npm install
 ```
 
-### 2. Start the Development Server
+### 🌐 Running the Web App (Fastest & Recommended)
+Start the modern React + Vite web dashboard directly on your browser:
 ```bash
-npx expo start
+npm run dev
 ```
+Open **[http://localhost:5173](http://localhost:5173)** in your browser!
 
-### 3. Run on Android
-- **Via Expo Go (Fastest & Easiest)**:
-  1. Install **Expo Go** from the Google Play Store on your Android phone.
-  2. Scan the QR code displayed in the terminal.
-- **Via Android Emulator**:
-  Press `a` in the terminal to launch on a connected Android device or emulator.
-- **Via Web Browser (Immediate Preview)**:
-  Press `w` in the terminal or run:
+---
+
+### 📱 Running on Android
+- **Via Prebuilt APK**:
+  The compiled APK is ready at [**`IntervalsPulse.apk`**](file:///home/francesco/Progetti/Interval/IntervalsPulse.apk). Sideload it directly onto your phone!
+- **Via Expo Go**:
   ```bash
-  npm run web
+  npx expo start
   ```
+  Scan the terminal QR code using the Expo Go app.
 
 ### 4. Build a Standalone Android APK (EAS Build)
 To generate an installable `.apk` file for your Android phone:
