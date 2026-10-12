@@ -10,6 +10,7 @@ export interface Athlete {
   restingHR?: number;
   maxHR?: number;
   ftp?: number;
+  vo2max?: number;
   sportSettings?: AthleteSportSettings[];
 }
 
@@ -49,6 +50,7 @@ export interface Wellness {
   comments?: string;
   // Computed helpers
   tsb?: number; // Form = CTL - ATL
+  vo2max?: number;
 }
 
 export interface ActivityInterval {
@@ -118,7 +120,11 @@ export interface CalendarEvent {
 export interface PowerCurvePoint {
   secs: number;
   watts: number;
+  wkg?: number;
+  seasonWatts?: number;
+  seasonWkg?: number;
   label: string;
+  category?: 'Sprint' | 'Anaerobic' | 'VO2 Max' | 'Threshold' | 'Endurance';
 }
 
 export interface AuthCredentials {

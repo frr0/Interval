@@ -1,4 +1,4 @@
-import { Activity, Athlete, CalendarEvent, Wellness } from '../types/intervals';
+import { Activity, Athlete, CalendarEvent, PowerCurvePoint, Wellness } from '../types/intervals';
 
 const BASE_URL = 'https://intervals.icu/api/v1';
 
@@ -185,4 +185,35 @@ export async function getCalendarEvents(
     `/athlete/${cleanId}/events?${params.toString()}`,
     apiKey
   );
+}
+
+export function derivePowerCurve(ftp: number = 295, weight: number = 68.5): PowerCurvePoint[] {
+  const w = weight > 0 ? weight : 68.5;
+  const f = ftp > 0 ? ftp : 295;
+
+  const steps = [
+    { secs: 5, label: '5s', ratio: 3.32, seasonRatio: 3.52, cat: 'Sprint' as const },
+    { secs: 15, label: '15s', ratio: 2.78, seasonRatio: 2.92, cat: 'Sprint' as const },
+    { secs: 30, label: '30s', ratio: 2.24, seasonRatio: 2.34, cat: 'Anaerobic' as const },
+    { secs: 60, label: '1m', ratio: 1.80, seasonRatio: 1.86, cat: 'Anaerobic' as const },
+    { secs: 120, label: '2m', ratio: 1.49, seasonRatio: 1.56, cat: 'VO2 Max' as const },
+    { secs: 300, label: '5m', ratio: 1.30, seasonRatio: 1.34, cat: 'VO2 Max' as const },
+    { secs: 600, label: '10m', ratio: 1.14, seasonRatio: 1.17, cat: 'Threshold' as const },
+    { secs: 1200, label: '20m', ratio: 1.05, seasonRatio: 1.07, cat: 'Threshold' as const },
+    { secs: 3600, label: '1h', ratio: 0.97, seasonRatio: 0.98, cat: 'Endurance' as const },
+  ];
+
+  return steps.map((m) => {
+    const watts = Math.round(f * m.ratio);
+    const seasonWatts = Math.round(f * m.seasonRatio);
+    return {
+      secs: m.secs,
+      label: m.label,
+      watts,
+      wkg: Math.round((watts / w) * 10) / 10,
+      seasonWatts,
+      seasonWkg: Math.round((seasonWatts / w) * 10) / 10,
+      category: m.cat,
+    };
+  });
 }

@@ -1,21 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FitnessChart } from '../../components/FitnessChart';
+import { HrvChart } from '../../components/HrvChart';
 import { MetricCard } from '../../components/MetricCard';
+import { PowerCurveChart } from '../../components/PowerCurveChart';
+import { RestingHrChart } from '../../components/RestingHrChart';
+import { SleepChart } from '../../components/SleepChart';
+import { Vo2MaxChart } from '../../components/Vo2MaxChart';
 import { Colors } from '../../constants/theme';
 import { useApp } from '../../context/AppContext';
 import { formatDateShort, formatDuration, getFormStatus } from '../../utils/formatters';
 
+type TabType = 'fitness' | 'power' | 'hrv' | 'resting_hr' | 'sleep' | 'vo2max' | 'all';
+
 export default function FitnessScreen() {
-  const { wellness, isRefreshing, refreshData } = useApp();
+  const { wellness, athlete, powerCurve, isRefreshing, refreshData } = useApp();
+  const [activeTab, setActiveTab] = useState<TabType>('fitness');
 
   const sortedWellness = useMemo(() => {
     return [...wellness].sort(
@@ -28,14 +37,59 @@ export default function FitnessScreen() {
   const atl = latest?.atl ?? 82;
   const tsb = latest?.tsb ?? (ctl - atl);
   const formStatus = getFormStatus(tsb);
+  const ftp = athlete?.ftp ?? 295;
+  const weight = athlete?.weight ?? 68.5;
+  const vo2max = latest?.vo2max ?? athlete?.vo2max ?? 56.4;
+
+  const tabOptions: { id: TabType; label: string; icon: any; color: string }[] = [
+    { id: 'fitness', label: 'Fitness', icon: 'bar-chart-outline', color: Colors.fitnessCtl },
+    { id: 'power', label: 'Power', icon: 'flash-outline', color: Colors.stravaOrange },
+    { id: 'hrv', label: 'HRV', icon: 'heart-outline', color: Colors.whoopMint },
+    { id: 'resting_hr', label: 'Rest HR', icon: 'pulse-outline', color: Colors.garminCyan },
+    { id: 'sleep', label: 'Sleep', icon: 'moon-outline', color: '#818CF8' },
+    { id: 'vo2max', label: 'VO2 Max', icon: 'trophy-outline', color: Colors.fatigueAtl },
+    { id: 'all', label: 'All', icon: 'layers-outline', color: Colors.text },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.screenHeader}>
-        <Text style={styles.screenTitle}>FITNESS & FORM</Text>
+        <Text style={styles.screenTitle}>ANALYTICS & BIOMETRICS</Text>
         <Text style={styles.screenSubtitle}>
-          Performance modeling, training load & physiological fatigue
+          Performance modeling, power curves & recovery biomarkers
         </Text>
+      </View>
+
+      {/* Horizontal Filter Tabs */}
+      <View style={styles.tabContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabScroll}
+        >
+          {tabOptions.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                style={[styles.tabButton, isActive && styles.tabButtonActive]}
+                onPress={() => setActiveTab(tab.id)}
+              >
+                <Ionicons
+                  name={tab.icon}
+                  size={14}
+                  color={isActive ? tab.color : Colors.textMuted}
+                />
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                  {tab.label}
+                </Text>
+                {isActive && (
+                  <View style={[styles.tabDot, { backgroundColor: tab.color }]} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -50,106 +104,137 @@ export default function FitnessScreen() {
           />
         }
       >
-        {/* Interactive CTL / ATL / TSB Chart */}
-        <FitnessChart data={wellness} height={240} />
+        {/* TAB: FITNESS OR ALL */}
+        {(activeTab === 'fitness' || activeTab === 'all') && (
+          <View style={styles.sectionBlock}>
+            <FitnessChart data={wellness} height={230} />
 
-        {/* Current State Cards */}
-        <View style={styles.metricsGrid}>
-          <MetricCard
-            label="Fitness (CTL)"
-            value={ctl.toFixed(1)}
-            unit="load"
-            subValue="42-day training base"
-            icon="bar-chart-outline"
-            accentColor={Colors.fitnessCtl}
-          />
-
-          <MetricCard
-            label="Fatigue (ATL)"
-            value={atl.toFixed(1)}
-            unit="load"
-            subValue="7-day acute stress"
-            icon="flash-outline"
-            accentColor={Colors.fatigueAtl}
-          />
-
-          <MetricCard
-            label="Form (TSB)"
-            value={tsb > 0 ? `+${tsb.toFixed(1)}` : tsb.toFixed(1)}
-            unit=""
-            subValue={formStatus.label}
-            icon="speedometer-outline"
-            accentColor={formStatus.color}
-          />
-
-          <MetricCard
-            label="Ramp Rate"
-            value={
-              latest?.rampRate !== undefined
-                ? `${latest.rampRate > 0 ? '+' : ''}${latest.rampRate.toFixed(1)}`
-                : '+3.4'
-            }
-            unit="/wk"
-            subValue="Safe < +5.0 / wk"
-            icon="trending-up"
-            accentColor={Colors.warningAmber}
-          />
-        </View>
-
-        {/* Form Zones Explanation Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="information-circle-outline" size={18} color={Colors.garminCyan} />
-            <Text style={styles.cardHeaderTitle}>UNDERSTANDING FORM (TSB)</Text>
-          </View>
-          <Text style={styles.cardBodyText}>
-            Form = Fitness (CTL) − Fatigue (ATL). It indicates your current readiness for high intensity or racing:
-          </Text>
-
-          <View style={styles.zoneList}>
-            <View style={styles.zoneItem}>
-              <View style={[styles.zonePill, { backgroundColor: Colors.whoopMint }]}>
-                <Text style={styles.zonePillText}>+5 to +25</Text>
-              </View>
-              <View style={styles.zoneInfo}>
-                <Text style={styles.zoneName}>Fresh & Race Ready</Text>
-                <Text style={styles.zoneDesc}>Supercompensation peak. Ideal for competitions.</Text>
-              </View>
-            </View>
-
-            <View style={styles.zoneItem}>
-              <View style={[styles.zonePill, { backgroundColor: Colors.fitnessCtl }]}>
-                <Text style={styles.zonePillText}>-10 to -30</Text>
-              </View>
-              <View style={styles.zoneInfo}>
-                <Text style={styles.zoneName}>Optimal Training Zone</Text>
-                <Text style={styles.zoneDesc}>Productive stimulus building durable aerobic endurance.</Text>
-              </View>
-            </View>
-
-            <View style={styles.zoneItem}>
-              <View style={[styles.zonePill, { backgroundColor: Colors.warningAmber }]}>
-                <Text style={styles.zonePillText}>-30 to -40</Text>
-              </View>
-              <View style={styles.zoneInfo}>
-                <Text style={styles.zoneName}>High Fatigue</Text>
-                <Text style={styles.zoneDesc}>Straining capacity. Prioritize nutrition & recovery.</Text>
-              </View>
-            </View>
-
-            <View style={styles.zoneItem}>
-              <View style={[styles.zonePill, { backgroundColor: Colors.dangerRed }]}>
-                <Text style={styles.zonePillText}>&lt; -40</Text>
-              </View>
-              <View style={styles.zoneInfo}>
-                <Text style={styles.zoneName}>Overreaching / Overload</Text>
-                <Text style={styles.zoneDesc}>Injury and illness danger. Rest days required.</Text>
-              </View>
+            <View style={styles.metricsGrid}>
+              <MetricCard
+                label="Fitness (CTL)"
+                value={ctl.toFixed(1)}
+                unit="load"
+                subValue="42-day base"
+                icon="bar-chart-outline"
+                accentColor={Colors.fitnessCtl}
+              />
+              <MetricCard
+                label="Fatigue (ATL)"
+                value={atl.toFixed(1)}
+                unit="load"
+                subValue="7-day acute stress"
+                icon="flash-outline"
+                accentColor={Colors.fatigueAtl}
+              />
+              <MetricCard
+                label="Form (TSB)"
+                value={tsb > 0 ? `+${tsb.toFixed(1)}` : tsb.toFixed(1)}
+                unit=""
+                subValue={formStatus.label}
+                icon="speedometer-outline"
+                accentColor={formStatus.color}
+              />
+              <MetricCard
+                label="eFTP"
+                value={`${ftp} W`}
+                unit=""
+                subValue="Threshold"
+                icon="fitness-outline"
+                accentColor={Colors.stravaOrange}
+              />
             </View>
           </View>
-        </View>
+        )}
 
-        {/* Daily Wellness History Log */}
+        {/* TAB: POWER OR ALL */}
+        {(activeTab === 'power' || activeTab === 'all') && (
+          <View style={styles.sectionBlock}>
+            <PowerCurveChart data={powerCurve} ftp={ftp} weight={weight} height={230} />
+
+            {activeTab === 'power' && (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="flash-outline" size={16} color={Colors.stravaOrange} />
+                  <Text style={styles.cardHeaderTitle}>POWER PROFILING BENCHMARKS</Text>
+                </View>
+                <Text style={styles.cardBodyText}>
+                  Your Mean Maximal Power (MMP) curve reveals anaerobic capacity and aerobic ceiling:
+                </Text>
+                <View style={styles.zoneList}>
+                  <View style={styles.zoneItem}>
+                    <View style={[styles.zonePill, { backgroundColor: Colors.stravaOrange }]}>
+                      <Text style={styles.zonePillText}>Sprint</Text>
+                    </View>
+                    <View style={styles.zoneInfo}>
+                      <Text style={styles.zoneName}>5s - 15s Neuromuscular</Text>
+                      <Text style={styles.zoneDesc}>Max watts for jumps and finish sprints.</Text>
+                    </View>
+                  </View>
+                  <View style={styles.zoneItem}>
+                    <View style={[styles.zonePill, { backgroundColor: Colors.garminCyan }]}>
+                      <Text style={styles.zonePillText}>VO2 Max</Text>
+                    </View>
+                    <View style={styles.zoneInfo}>
+                      <Text style={styles.zoneName}>3m - 5m Aerobic Ceiling</Text>
+                      <Text style={styles.zoneDesc}>Maximal stroke volume and oxygen throughput.</Text>
+                    </View>
+                  </View>
+                  <View style={styles.zoneItem}>
+                    <View style={[styles.zonePill, { backgroundColor: Colors.whoopMint }]}>
+                      <Text style={styles.zonePillText}>FTP</Text>
+                    </View>
+                    <View style={styles.zoneInfo}>
+                      <Text style={styles.zoneName}>20m - 60m Functional Threshold</Text>
+                      <Text style={styles.zoneDesc}>Lactate balance limit for sustained climbing.</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* TAB: HRV OR ALL */}
+        {(activeTab === 'hrv' || activeTab === 'all') && (
+          <View style={styles.sectionBlock}>
+            <HrvChart data={wellness} height={230} />
+
+            {activeTab === 'hrv' && (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="heart-outline" size={16} color={Colors.whoopMint} />
+                  <Text style={styles.cardHeaderTitle}>UNDERSTANDING HRV (rMSSD)</Text>
+                </View>
+                <Text style={styles.cardBodyText}>
+                  HRV measures autonomic nervous system balance. Values inside your green baseline indicate readiness for high training strain.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* TAB: RESTING HR OR ALL */}
+        {(activeTab === 'resting_hr' || activeTab === 'all') && (
+          <View style={styles.sectionBlock}>
+            <RestingHrChart data={wellness} defaultRHR={athlete?.restingHR ?? 46} height={230} />
+          </View>
+        )}
+
+        {/* TAB: SLEEP OR ALL */}
+        {(activeTab === 'sleep' || activeTab === 'all') && (
+          <View style={styles.sectionBlock}>
+            <SleepChart data={wellness} height={230} />
+          </View>
+        )}
+
+        {/* TAB: VO2 MAX OR ALL */}
+        {(activeTab === 'vo2max' || activeTab === 'all') && (
+          <View style={styles.sectionBlock}>
+            <Vo2MaxChart data={wellness} currentVo2Max={vo2max} height={230} />
+          </View>
+        )}
+
+        {/* Daily History Table */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>RECENT DAILY LOGS</Text>
           <Text style={styles.sectionSubLabel}>{sortedWellness.length} entries</Text>
@@ -194,12 +279,19 @@ export default function FitnessScreen() {
                     <Text style={styles.logColValue}>{formatDuration(item.sleepSecs)}</Text>
                   </View>
                 ) : null}
+
+                {item.restingHR ? (
+                  <View style={styles.logCol}>
+                    <Text style={styles.logColLabel}>RHR</Text>
+                    <Text style={styles.logColValue}>{item.restingHR}bpm</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           );
         })}
 
-        <View style={{ height: 30 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -213,7 +305,7 @@ const styles = StyleSheet.create({
   screenHeader: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   screenTitle: {
     fontSize: 20,
@@ -226,9 +318,49 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
+  tabContainer: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceBorderSubtle,
+  },
+  tabScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  tabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+  },
+  tabButtonActive: {
+    backgroundColor: Colors.surfaceElevated,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.textMuted,
+  },
+  tabTextActive: {
+    color: Colors.text,
+  },
+  tabDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  sectionBlock: {
+    marginVertical: 4,
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -253,7 +385,7 @@ const styles = StyleSheet.create({
   cardHeaderTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: Colors.garminCyan,
+    color: Colors.textMuted,
     letterSpacing: 0.8,
   },
   cardBodyText: {
@@ -270,7 +402,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   zonePill: {
-    width: 72,
+    width: 64,
     paddingVertical: 3,
     borderRadius: 6,
     alignItems: 'center',

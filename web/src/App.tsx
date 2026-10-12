@@ -5,15 +5,21 @@ import { Navbar, NavTab } from './components/Navbar';
 import { ActivitiesView } from './components/views/ActivitiesView';
 import { CalendarView } from './components/views/CalendarView';
 import { DashboardView } from './components/views/DashboardView';
-import { FitnessView } from './components/views/FitnessView';
 import { ProfileView } from './components/views/ProfileView';
 import { AppProvider, useApp } from './context/AppContext';
 import { Activity } from './types/intervals';
+import { AnalyticsTab, FitnessView } from './components/views/FitnessView';
 
 function MainApp() {
   const { credentials, isLoading, useImperial } = useApp();
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('fitness');
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+
+  const handleNavigateToFitness = (subTab?: AnalyticsTab) => {
+    if (subTab) setAnalyticsTab(subTab);
+    setCurrentTab('fitness');
+  };
 
   if (isLoading) {
     return (
@@ -36,9 +42,10 @@ function MainApp() {
           <DashboardView
             onSelectActivity={setSelectedActivity}
             onNavigateTab={setCurrentTab}
+            onNavigateAnalytics={handleNavigateToFitness}
           />
         )}
-        {currentTab === 'fitness' && <FitnessView />}
+        {currentTab === 'fitness' && <FitnessView key={analyticsTab} initialTab={analyticsTab} />}
         {currentTab === 'activities' && (
           <ActivitiesView onSelectActivity={setSelectedActivity} />
         )}

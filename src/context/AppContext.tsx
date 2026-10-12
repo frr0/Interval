@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import {
+  derivePowerCurve,
   getActivities,
   getAthleteProfile,
   getCalendarEvents,
@@ -10,10 +11,11 @@ import {
   MOCK_ACTIVITIES,
   MOCK_ATHLETE,
   MOCK_CALENDAR_EVENTS,
+  MOCK_POWER_CURVE,
   MOCK_WELLNESS,
 } from '../services/mockData';
 import { StorageService, UserSettings } from '../services/storage';
-import { Activity, Athlete, AuthCredentials, CalendarEvent, Wellness } from '../types/intervals';
+import { Activity, Athlete, AuthCredentials, CalendarEvent, PowerCurvePoint, Wellness } from '../types/intervals';
 import { computeRecoveryScore } from '../utils/formatters';
 
 interface AppContextType {
@@ -22,6 +24,7 @@ interface AppContextType {
   wellness: Wellness[];
   activities: Activity[];
   events: CalendarEvent[];
+  powerCurve: PowerCurvePoint[];
   latestWellness: Wellness | null;
   recoveryScore: number;
   weeklyLoad: number;
@@ -255,6 +258,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [activities]);
 
+  const powerCurve = useMemo(() => {
+    if (credentials?.isDemo || !athlete) {
+      return MOCK_POWER_CURVE;
+    }
+    return derivePowerCurve(athlete.ftp || 295, athlete.weight || 68.5);
+  }, [credentials, athlete]);
+
   return (
     <AppContext.Provider
       value={{
@@ -263,6 +273,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         wellness,
         activities,
         events,
+        powerCurve,
         latestWellness,
         recoveryScore,
         weeklyLoad,

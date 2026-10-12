@@ -1,4 +1,4 @@
-import { Activity, Athlete, CalendarEvent, Wellness } from '../types/intervals';
+import { Activity, Athlete, CalendarEvent, PowerCurvePoint, Wellness } from '../types/intervals';
 
 export const MOCK_ATHLETE: Athlete = {
   id: 'i104928',
@@ -12,6 +12,7 @@ export const MOCK_ATHLETE: Athlete = {
   restingHR: 46,
   maxHR: 194,
   ftp: 295,
+  vo2max: 56.4,
   sportSettings: [
     {
       id: 'Ride',
@@ -61,6 +62,7 @@ export function generateMockWellness(): Wellness[] {
     const sleepSecs = Math.round(sleepHours * 3600);
     const sleepQuality = Math.min(5, Math.max(2, Math.round(3.5 + Math.random() * 1.5)));
     const sleepScore = Math.round(72 + Math.random() * 24);
+    const vo2max = Math.round((54.4 + ((30 - i) / 30) * 2.0 + (Math.sin(i / 3) * 0.2)) * 10) / 10;
 
     result.push({
       id: dateStr,
@@ -81,11 +83,24 @@ export function generateMockWellness(): Wellness[] {
       mood: tsb > -10 ? 4 : 3,
       weight: 68.2 + (Math.sin(i / 5) * 0.6),
       readiness: Math.min(98, Math.max(45, Math.round(70 + (hrv - 60) * 0.8 + (tsb * 0.5)))),
+      vo2max,
     });
   }
 
   return result;
 }
+
+export const MOCK_POWER_CURVE: PowerCurvePoint[] = [
+  { secs: 5, label: '5s', watts: 980, wkg: 14.3, seasonWatts: 1040, seasonWkg: 15.2, category: 'Sprint' },
+  { secs: 15, label: '15s', watts: 820, wkg: 12.0, seasonWatts: 860, seasonWkg: 12.6, category: 'Sprint' },
+  { secs: 30, label: '30s', watts: 660, wkg: 9.6, seasonWatts: 690, seasonWkg: 10.1, category: 'Anaerobic' },
+  { secs: 60, label: '1m', watts: 530, wkg: 7.7, seasonWatts: 550, seasonWkg: 8.0, category: 'Anaerobic' },
+  { secs: 120, label: '2m', watts: 440, wkg: 6.4, seasonWatts: 460, seasonWkg: 6.7, category: 'VO2 Max' },
+  { secs: 300, label: '5m', watts: 385, wkg: 5.6, seasonWatts: 395, seasonWkg: 5.8, category: 'VO2 Max' },
+  { secs: 600, label: '10m', watts: 335, wkg: 4.9, seasonWatts: 345, seasonWkg: 5.0, category: 'Threshold' },
+  { secs: 1200, label: '20m', watts: 310, wkg: 4.5, seasonWatts: 315, seasonWkg: 4.6, category: 'Threshold' },
+  { secs: 3600, label: '1h', watts: 285, wkg: 4.2, seasonWatts: 290, seasonWkg: 4.2, category: 'Endurance' },
+];
 
 export const MOCK_WELLNESS: Wellness[] = generateMockWellness();
 

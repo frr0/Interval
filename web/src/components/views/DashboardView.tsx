@@ -14,15 +14,18 @@ import { ActivityCard } from '../ActivityCard';
 import { MetricCard } from '../MetricCard';
 import { RecoveryRing } from '../RecoveryRing';
 import { WeeklyLoadBar } from '../WeeklyLoadBar';
+import { AnalyticsTab } from './FitnessView';
 
 interface DashboardViewProps {
   onSelectActivity: (activity: Activity) => void;
   onNavigateTab: (tab: any) => void;
+  onNavigateAnalytics?: (tab: AnalyticsTab) => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectActivity,
   onNavigateTab,
+  onNavigateAnalytics,
 }) => {
   const {
     athlete,
@@ -194,9 +197,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Daily Wellness Biometrics Grid */}
       <div>
-        <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">
-          Daily Wellness & Biometrics
-        </h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+            Daily Wellness & Biometrics
+          </h4>
+          <button
+            onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('all') : onNavigateTab('fitness'))}
+            className="text-xs font-bold text-[#00E5A3] hover:underline flex items-center gap-1"
+          >
+            <span>All Biometrics & Graphs</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <MetricCard
             label="Sleep"
@@ -212,6 +225,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             }
             icon={<Moon className="w-4 h-4" />}
             accentColor="#818CF8"
+            onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('sleep') : onNavigateTab('fitness'))}
           />
 
           <MetricCard
@@ -221,6 +235,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             subValue="Within baseline"
             icon={<Heart className="w-4 h-4" />}
             accentColor="#00E5A3"
+            onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('hrv') : onNavigateTab('fitness'))}
           />
 
           <MetricCard
@@ -230,19 +245,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             subValue="Low & recovered"
             icon={<PulseIcon className="w-4 h-4" />}
             accentColor="#00B4D8"
+            onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('resting_hr') : onNavigateTab('fitness'))}
           />
 
           <MetricCard
-            label="Ramp Rate"
-            value={
-              latestWellness?.rampRate !== undefined
-                ? `${latestWellness.rampRate > 0 ? '+' : ''}${latestWellness.rampRate}`
-                : '+3.2'
-            }
-            unit="/wk"
-            subValue="Safe building"
+            label="VO2 Max"
+            value={latestWellness?.vo2max ? `${latestWellness.vo2max}` : athlete?.vo2max ? `${athlete.vo2max}` : '56.4'}
+            unit="ml/kg"
+            subValue="Superior fitness"
             icon={<TrendingUp className="w-4 h-4" />}
-            accentColor="#F59E0B"
+            accentColor="#A855F7"
+            onClick={() => (onNavigateAnalytics ? onNavigateAnalytics('vo2max') : onNavigateTab('fitness'))}
           />
         </div>
       </div>
